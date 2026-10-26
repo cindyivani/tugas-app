@@ -1,0 +1,18 @@
+# Environment variables
+.env
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+tmp/
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.DS_Store
+Thumbs.db

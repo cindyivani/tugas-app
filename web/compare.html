@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perbandingan Protein — Protein Pangan</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Chart.js for Multi-Protein Comparison -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        <div class="brand-icon">🧬</div>
+        <span>Protein Pangan</span>
+      </a>
+      <nav class="nav-links">
+        <a href="/">Katalog</a>
+        <a href="/compare" class="active">Perbandingan</a>
+        <a href="https://www.rcsb.org/" target="_blank" rel="noopener">RCSB PDB ↗</a>
+        <a href="https://www.uniprot.org/" target="_blank" rel="noopener">UniProt ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <div class="detail-header">
+      <div>
+        <h1 style="font-size: 2rem; font-weight: 800;">Komparasi Analisis Antar-Protein</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          Bandingkan karakteristik fisikokimia, berat molekul, dan distribusi profil asam amino secara komprehensif.
+        </p>
+      </div>
+      <div>
+        <button id="btnClearAll" class="btn btn-secondary">Hapus Semua Pilihan</button>
+      </div>
+    </div>
+
+    <!-- Active Comparison View -->
+    <div id="compareContent" style="display: none;">
+      <!-- Comparison Table -->
+      <section class="detail-card" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1rem;">Perbandingan Karakteristik Fisikokimia</h3>
+        <div style="overflow-x: auto;">
+          <table class="compare-table" id="compareTable">
+            <thead>
+              <tr id="compareTableHead">
+                <th class="prop-col">Parameter</th>
+              </tr>
+            </thead>
+            <tbody id="compareTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Comparative Amino Acid Profile Chart -->
+      <section class="detail-card" style="margin-bottom: 3rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h3>Overlay Profil Asam Amino Komparatif</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+              Perbandingan distribusi asam amino esensial & non-esensial (g per 100g protein).
+            </p>
+          </div>
+          <div class="filter-group">
+            <button class="filter-btn active" id="cmpBarBtn">Grafik Batang Multi-Protein</button>
+            <button class="filter-btn" id="cmpRadarBtn">Grafik Radar (Overlay)</button>
+          </div>
+        </div>
+
+        <div class="chart-container" style="height: 380px;">
+          <canvas id="compareChart"></canvas>
+        </div>
+      </section>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyCompareState" class="empty-state" style="display: none;">
+      <div class="empty-icon">⚖️</div>
+      <h3>Belum ada protein yang dipilih</h3>
+      <p>Pilih minimal dua protein dari katalog untuk melihat perbandingan mendalam.</p>
+      <div style="margin-top: 1.5rem;">
+        <a href="/" class="btn btn-primary">Buka Katalog Protein →</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>© 2026 Protein Pangan — Platform Riset Struktur Protein Pangan Interaktif.</p>
+  </footer>
+
+  <script src="/js/compare.js"></script>
+</body>
+</html>

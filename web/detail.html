@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Protein — Protein Pangan</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- 3Dmol.js for 3D Protein Structure Viewer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js"></script>
+  <!-- Chart.js for Amino Acid Composition -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand-logo">
+        <div class="brand-icon">🧬</div>
+        <span>Protein Pangan</span>
+      </a>
+      <nav class="nav-links">
+        <a href="/">← Kembali ke Katalog</a>
+        <a href="/compare">Perbandingan</a>
+        <a href="https://www.rcsb.org/" target="_blank" rel="noopener">RCSB PDB ↗</a>
+        <a href="https://www.uniprot.org/" target="_blank" rel="noopener">UniProt ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <div id="loader" class="loader-spinner"></div>
+
+    <div id="detailContent" style="display: none;">
+      <!-- Detail Header -->
+      <div class="detail-header">
+        <div class="detail-title-group">
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+            <span id="badgeCategory" class="badge"></span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);" id="uniprotBadge"></span>
+          </div>
+          <h1 id="proteinName">Nama Protein</h1>
+          <p id="commonName" class="detail-subtitle">Nama Umum / Sumber Pangan</p>
+        </div>
+        <div>
+          <a href="/compare" class="btn btn-secondary">Buka Komparasi 📊</a>
+        </div>
+      </div>
+
+      <!-- Description Banner -->
+      <section class="detail-card" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 0.75rem; font-size: 1.15rem;">Ringkasan & Fungsi Biologis</h3>
+        <p id="proteinDesc" style="color: var(--text-main); line-height: 1.7; font-size: 0.95rem;"></p>
+        <p id="bioFunc" style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.9rem; font-style: italic;"></p>
+      </section>
+
+      <!-- Grid: 3D Viewer & Physicochemical Stats -->
+      <div class="detail-grid">
+        <!-- 3D Viewer Section -->
+        <section class="viewer-card">
+          <div class="viewer-header">
+            <h3>Visualisasi Struktur 3D Kristalografi</h3>
+            <span id="pdbBadge" style="font-size: 0.8rem; font-weight: 700; color: var(--primary);">PDB: -</span>
+          </div>
+          
+          <div class="viewer-container" id="viewer3d">
+            <div id="viewerLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--text-muted); font-size: 0.9rem;">
+              Memuat model 3D kristalografi...
+            </div>
+          </div>
+
+          <!-- Controls for 3D Viewer -->
+          <div class="viewer-controls">
+            <button id="btnSpin" class="btn btn-secondary btn-sm">🔄 Putar Otomatis</button>
+            <button id="btnResetView" class="btn btn-secondary btn-sm">🎯 Reset Kamera</button>
+            <div style="display: inline-flex; align-items: center; gap: 0.35rem; margin-left: auto;">
+              <label for="styleSelect" style="font-size: 0.8rem; color: var(--text-muted);">Gaya:</label>
+              <select id="styleSelect" class="sort-select" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">
+                <option value="cartoon">Cartoon / Pita</option>
+                <option value="stick">Stick Molekul</option>
+                <option value="sphere">Sphere (Ruang)</option>
+                <option value="surface">Permukaan (Surface)</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Physicochemical Parameters -->
+        <section class="detail-card">
+          <h3 style="margin-bottom: 1.25rem; font-size: 1.15rem;">Karakteristik Fisikokimia</h3>
+          <div class="prop-list">
+            <div class="prop-item">
+              <span class="prop-label">Berat Molekul (MW)</span>
+              <span class="prop-value" id="valMw">-</span>
+            </div>
+            <div class="prop-item">
+              <span class="prop-label">Titik Isoelektrik (pI)</span>
+              <span class="prop-value" id="valPi">-</span>
+            </div>
+            <div class="prop-item">
+              <span class="prop-label">Skor Daya Cerna (DIAAS/PDCAAS)</span>
+              <span class="prop-value" id="valScore">-</span>
+            </div>
+            <div class="prop-item">
+              <span class="prop-label">Sumber Bahan Pangan</span>
+              <span class="prop-value" id="valSource">-</span>
+            </div>
+            <div class="prop-item">
+              <span class="prop-label">Kategori Sumber</span>
+              <span class="prop-value" id="valCategory">-</span>
+            </div>
+            <div class="prop-item">
+              <span class="prop-label">Akses Entri PDB</span>
+              <span class="prop-value" id="valPdb">-</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Amino Acid Composition Section -->
+      <section class="detail-card" style="margin-top: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h3 style="font-size: 1.2rem;">Profil & Komposisi Asam Amino</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Kandungan gram per 100g protein murni.</p>
+          </div>
+          <div class="chart-toggle-group">
+            <button id="btnChartBar" class="btn btn-secondary btn-sm active">Diagram Batang</button>
+            <button id="btnChartRadar" class="btn btn-secondary btn-sm">Diagram Radar</button>
+          </div>
+        </div>
+
+        <!-- Chart Canvas Container -->
+        <div class="chart-container" style="height: 340px;">
+          <canvas id="aminoChart"></canvas>
+        </div>
+
+        <!-- Amino Acid Breakdown Table -->
+        <div style="margin-top: 2rem; overflow-x: auto;">
+          <table class="amino-table">
+            <thead>
+              <tr>
+                <th>Asam Amino</th>
+                <th>Kode</th>
+                <th>Kategori</th>
+                <th>Jumlah (g / 100g)</th>
+              </tr>
+            </thead>
+            <tbody id="aminoTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- External Links -->
+      <section class="detail-card" style="margin-top: 2rem; margin-bottom: 3rem;">
+        <h3>Referensi Literatur & Basis Data Ilmiah</h3>
+        <ul style="padding-left: 1.25rem; font-size: 0.9rem; color: #334155; line-height: 1.8;">
+          <li>RCSB Protein Data Bank (PDB): <a id="refPdbLink" href="#" target="_blank" rel="noopener">Detail Struktur Kristalografi & PDB Entry</a></li>
+          <li>UniProt Knowledgebase: <a id="refUniprotLink" href="#" target="_blank" rel="noopener">Urutan Asam Amino & Anotasi Fungsional UniProt</a></li>
+          <li>Database Komposisi Pangan & Nutrisi (Standar FAO/WHO PDCAAS & DIAAS).</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>© 2026 Protein Pangan — Platform Riset Struktur Protein Pangan Interaktif.</p>
+  </footer>
+
+  <script src="/js/detail.js"></script>
+</body>
+</html>

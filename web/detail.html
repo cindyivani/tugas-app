@@ -31,6 +31,14 @@
   <main class="container">
     <div id="loader" class="loader-spinner"></div>
 
+    <!-- Error display untuk gagal memuat detail -->
+    <div id="detailError" style="display: none; padding: 2rem; text-align: center; background: #fee2e2; border: 1px solid #fecaca; border-radius: 0.5rem; color: #991b1b; margin: 1rem 0;">
+      <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">⚠️ Gagal memuat detail protein</div>
+      <div class="error-message" style="margin-bottom: 1rem; font-size: 0.9rem; line-height: 1.5;"></div>
+      <button onclick="retryLoadProteinDetail()" class="btn btn-primary" style="padding: 0.6rem 1.2rem;">Coba Lagi</button>
+      <a href="/" class="btn btn-secondary" style="padding: 0.6rem 1.2rem; margin-left: 0.5rem;">Kembali ke Katalog</a>
+    </div>
+
     <div id="detailContent" style="display: none;">
       <!-- Detail Header -->
       <div class="detail-header">

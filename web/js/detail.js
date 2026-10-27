@@ -16,20 +16,6 @@ function getCompareIds() {
 
 function saveCompareIds(ids) {
   localStorage.setItem('compare_proteins', JSON.stringify(ids));
-  updateCompareButtonState();
-}
-
-function updateCompareButtonState() {
-  const btn = document.getElementById('addCompareBtn');
-  if (!btn || !currentProtein) return;
-  const ids = getCompareIds();
-  const exists = ids.includes(currentProtein.id);
-  btn.textContent = exists ? '✓ Dalam Komparasi' : '➕ Bandingkan';
-  if (exists) {
-    btn.classList.add('selected');
-  } else {
-    btn.classList.remove('selected');
-  }
 }
 
 async function loadProteinDetail() {
@@ -38,6 +24,7 @@ async function loadProteinDetail() {
 
   const loader = document.getElementById('loader');
   const content = document.getElementById('detailContent');
+  const errorEl = document.getElementById('detailError');
 
   if (!id) {
     alert('ID protein tidak ditemukan pada URL');
@@ -45,11 +32,26 @@ async function loadProteinDetail() {
     return;
   }
 
+  // Reset state tiap kali dipanggil
   loader.style.display = 'block';
   content.style.display = 'none';
+  if (errorEl) errorEl.style.display = 'none';
 
   try {
     const res = await fetch(`/api/proteins/${id}`);
+
+    // Tangani respons HTTP error (404, 500, dst) sebelum parse JSON
+    if (!res.ok) {
+      let errorMsg = `Gagal memuat detail protein (HTTP ${res.status}).`;
+      try {
+        const errJson = await res.json();
+        if (errJson.error) errorMsg += ' ' + errJson.error;
+      } catch (e) {
+        errorMsg += ' ' + res.statusText;
+      }
+      throw new Error(errorMsg);
+    }
+
     const json = await res.json();
 
     loader.style.display = 'none';
@@ -60,7 +62,6 @@ async function loadProteinDetail() {
       init3DViewer(json.data.pdb_id);
       renderAminoAcidChart(json.data.parsed_amino_acids || [], 'bar');
       renderAminoAcidTable(json.data.parsed_amino_acids || []);
-      updateCompareButtonState();
     } else {
       alert('Protein tidak ditemukan: ' + (json.error || ''));
       window.location.href = '/';
@@ -68,9 +69,19 @@ async function loadProteinDetail() {
   } catch (err) {
     loader.style.display = 'none';
     console.error('Failed to load detail:', err);
-    alert('Gagal memuat detail protein.');
+
+    // Tampilkan error inline dengan tombol Coba Lagi, atau alert fallback
+    if (errorEl) {
+      errorEl.querySelector('.error-message').textContent = err.message;
+      errorEl.style.display = 'block';
+    } else {
+      alert('Gagal memuat detail protein: ' + err.message);
+    }
   }
 }
+
+// Expose untuk tombol Coba Lagi di HTML
+window.retryLoadProteinDetail = loadProteinDetail;
 
 function renderDetail(p) {
   document.title = `${p.name} — Protein Pangan`;
@@ -82,22 +93,22 @@ function renderDetail(p) {
   badgeCategory.className = 'badge ' + (p.source_category.toLowerCase() === 'hewani' ? 'badge-hewani' : 'badge-nabati');
 
   document.getElementById('uniprotBadge').textContent = `UniProt: ${p.uniprot_id || '-'}`;
-  document.getElementById('viewerPdbId').textContent = p.pdb_id || '-';
+  document.getElementById('pdbBadge').textContent = `PDB: ${p.pdb_id || '-'}`;
 
   document.getElementById('valMw').textContent = p.molecular_weight ? `${p.molecular_weight} kDa` : '-';
   document.getElementById('valPi').textContent = p.isoelectric_point ? `${p.isoelectric_point}` : '-';
   document.getElementById('valScore').textContent = p.digestibility_score ? `${p.digestibility_score}%` : '-';
-  document.getElementById('valCodes').textContent = `${p.pdb_id || '-'} / ${p.uniprot_id || '-'}`;
+  document.getElementById('valSource').textContent = p.food_source || '-';
+  document.getElementById('valCategory').textContent = p.source_category || '-';
+  document.getElementById('valPdb').textContent = p.pdb_id || '-';
 
-  document.getElementById('foodSourceText').textContent = p.food_source || '-';
-  document.getElementById('bioFunctionText').textContent = p.biological_function || '-';
-  document.getElementById('descriptionText').textContent = p.description || '';
+  document.getElementById('proteinDesc').textContent = p.description || '';
+  document.getElementById('bioFunc').textContent = p.biological_function || '-';
 
   // External Links
   const pdbUrl = `https://www.rcsb.org/structure/${p.pdb_id}`;
   const uniprotUrl = p.reference_url || `https://www.uniprot.org/uniprotkb/${p.uniprot_id}/entry`;
 
-  document.getElementById('externalPdbLink').href = pdbUrl;
   document.getElementById('refPdbLink').href = pdbUrl;
   document.getElementById('refPdbLink').textContent = `RCSB PDB ${p.pdb_id} (${p.name})`;
 
@@ -107,25 +118,33 @@ function renderDetail(p) {
 
 // 3Dmol.js Viewer Initialization
 function init3DViewer(pdbId) {
-  const container = document.getElementById('gldiv');
+  const container = document.getElementById('viewer3d');
+  const loading = document.getElementById('viewerLoading');
   if (!container || !window.$3Dmol) {
     console.warn('3Dmol library not loaded yet');
     return;
   }
 
   container.innerHTML = '';
+  if (loading) container.appendChild(loading);
   const config = { backgroundColor: '#090d16' };
   glviewer = $3Dmol.createViewer(container, config);
 
-  if (!pdbId) return;
+  if (!pdbId) {
+    if (loading) loading.textContent = 'PDB ID tidak tersedia untuk protein ini.';
+    return;
+  }
 
   // Download PDB directly from RCSB PDB using 3Dmol helper
   $3Dmol.download(`pdb:${pdbId}`, glviewer, {}, function() {
+    if (loading) loading.style.display = 'none';
     applyViewerStyle('cartoon');
     glviewer.zoomTo();
     glviewer.render();
     glviewer.spin(true);
     isSpinning = true;
+    const spinBtn = document.getElementById('btnSpin');
+    if (spinBtn) spinBtn.classList.add('active');
   });
 }
 
@@ -292,30 +311,29 @@ function escapeHTML(str) {
 document.addEventListener('DOMContentLoaded', () => {
   loadProteinDetail();
 
-  // Viewer Style Buttons
-  const styleBtns = document.querySelectorAll('.btn-tool[data-style]');
-  styleBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      styleBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      applyViewerStyle(btn.getAttribute('data-style'));
+  // Viewer Style Select
+  const styleSelect = document.getElementById('styleSelect');
+  if (styleSelect) {
+    styleSelect.addEventListener('change', () => {
+      applyViewerStyle(styleSelect.value);
     });
-  });
+  }
 
   // Spin Toggle Button
-  const spinBtn = document.getElementById('spinToggleBtn');
+  const spinBtn = document.getElementById('btnSpin');
   if (spinBtn) {
     spinBtn.addEventListener('click', () => {
       if (!glviewer) return;
       isSpinning = !isSpinning;
       glviewer.spin(isSpinning);
-      spinBtn.textContent = `Putar Otomatis: ${isSpinning ? 'ON' : 'OFF'}`;
+      glviewer.render();
+      spinBtn.textContent = `🔄 Putar Otomatis: ${isSpinning ? 'ON' : 'OFF'}`;
       spinBtn.classList.toggle('active', isSpinning);
     });
   }
 
   // Reset Camera Button
-  const resetBtn = document.getElementById('resetCameraBtn');
+  const resetBtn = document.getElementById('btnResetView');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       if (!glviewer) return;
@@ -325,8 +343,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Chart Type Toggles
-  const barBtn = document.getElementById('chartTypeBarBtn');
-  const radarBtn = document.getElementById('chartTypeRadarBtn');
+  const barBtn = document.getElementById('btnChartBar');
+  const radarBtn = document.getElementById('btnChartRadar');
 
   if (barBtn && radarBtn) {
     barBtn.addEventListener('click', () => {
@@ -342,23 +360,4 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Add Compare Button
-  const addCompareBtn = document.getElementById('addCompareBtn');
-  if (addCompareBtn) {
-    addCompareBtn.addEventListener('click', () => {
-      if (!currentProtein) return;
-      let ids = getCompareIds();
-      const idx = ids.indexOf(currentProtein.id);
-      if (idx > -1) {
-        ids.splice(idx, 1);
-      } else {
-        if (ids.length >= 4) {
-          alert('Maksimal 4 protein dapat dibandingkan sekaligus.');
-          return;
-        }
-        ids.push(currentProtein.id);
-      }
-      saveCompareIds(ids);
-    });
-  }
 });
